@@ -1,6 +1,7 @@
 package com.roncoo.eshop.cache.ha.controller;
 
 import com.netflix.hystrix.HystrixCommand;
+import com.roncoo.eshop.cache.ha.hystrix.command.GetCityNameCommand;
 import com.roncoo.eshop.cache.ha.hystrix.command.GetProductInfoCommand;
 import com.roncoo.eshop.cache.ha.hystrix.command.GetProductInfosCommand;
 import com.roncoo.eshop.cache.ha.model.ProductInfo;
@@ -76,5 +77,26 @@ public class CacheController {
             }
         });
         return "success";
+    }
+
+    /**
+     * 模拟调用商品服务的查询接口，同时获取商品的地理位置(一般放在内存) -- 加个信号量机制限制并发访问数
+     * @param productId
+     * @return
+     */
+    @RequestMapping("/getProductInfoAndCity")
+    public ProductInfo getProductInfoAndCity(Long productId) {
+        HystrixCommand<ProductInfo> getProductInfoCommand = new GetProductInfoCommand(productId);
+
+        ProductInfo productInfo = getProductInfoCommand.execute();
+        System.out.println(productInfo);
+
+        Long cityId = productInfo.getCityId();
+        
+        HystrixCommand<String> getCityNameCommand = new GetCityNameCommand(cityId);
+        String cityName = getCityNameCommand.execute();
+        System.out.println(cityName);
+        productInfo.setCityName(cityName);
+        return productInfo;
     }
 }
